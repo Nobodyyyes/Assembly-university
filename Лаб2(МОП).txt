@@ -1,0 +1,101 @@
+DATA SEGMENT
+    NUMBERS DW 0xAAAA, 0x5555, 0x1234, 0x5678, 0x9ABC, 0xDEF0, 0x1357, 0x2468, 0x1111, 0x2222
+    RESULT  DW 10 DUP(0) ; для хранения результатов
+    COUNT   EQU 10       ; количество чисел
+    MSG1    DB 'Original number: $'
+    MSG2    DB 'Swapped number: $'
+DATA ENDS
+
+CODE SEGMENT
+START:
+    MOV AX, DATA
+    MOV DS, AX
+
+    MOV CX, COUNT         ; Устанавливаем количество чисел для обработки
+    MOV SI, 0             ; Начало массива NUMBERS
+    MOV DI, 0             ; Начало массива RESULT
+
+SWAP_LOOP:
+    MOV AX, [SI + NUMBERS] ; Загружаем число в AX
+
+    ; Меняем местами четные и нечетные биты
+    MOV BX, AX
+    SHR BX, 1              ; Сдвиг вправо для получения четных битов
+    AND BX, 0x5555         ; Маска для четных позиций
+    MOV DX, AX
+    SHL DX, 1              ; Сдвиг влево для получения нечетных битов
+    AND DX, 0xAAAA         ; Маска для нечетных позиций
+
+    OR BX, DX              ; Объединяем результаты
+    MOV [DI + RESULT], BX  ; Сохраняем результат
+
+    ADD SI, 2              ; Переход к следующему числу
+    ADD DI, 2              ; Переход к следующему месту для результата
+    LOOP SWAP_LOOP         ; Повторить для всех чисел
+
+    ; Печатаем исходные и измененные числа
+    MOV CX, COUNT          ; Количество чисел для печати
+    MOV SI, 0              ; Начало массива NUMBERS
+    MOV DI, 0              ; Начало массива RESULT
+
+PRINT_LOOP:
+    ; Печать исходного числа
+    LEA DX, MSG1
+    MOV AH, 9
+    INT 21H
+    MOV AX, [SI + NUMBERS]
+    CALL PRINT_NUMBER
+
+    ; Печать измененного числа
+    LEA DX, MSG2
+    MOV AH, 9
+    INT 21H
+    MOV AX, [DI + RESULT]
+    CALL PRINT_NUMBER
+
+    ; Переход к следующему числу
+    ADD SI, 2
+    ADD DI, 2
+    LOOP PRINT_LOOP
+
+    JMP END_PROGRAM
+
+; Подпрограмма для печати числа
+PRINT_NUMBER PROC
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+
+    XOR CX, CX                      ; счетчик цифр = 0
+    MOV BX, 10                      ; делитель = 10
+
+CONVERT_LOOP:
+    XOR DX, DX
+    DIV BX                          ; AX = AX / 10, остаток в DX
+    PUSH DX                         ; сохранить цифру
+    INC CX
+    OR AX, AX
+    JNZ CONVERT_LOOP
+
+    ; Вывод цифр
+PRINT_DIGITS:
+    POP DX
+    ADD DL, '0'
+    MOV AH, 2
+    INT 21H
+    LOOP PRINT_DIGITS
+
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+    RET
+PRINT_NUMBER ENDP
+
+END_PROGRAM:
+    MOV AX, 4C00H                   ; завершить выполнение
+    INT 21H
+
+CODE ENDS
+END START
