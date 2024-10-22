@@ -1,0 +1,59 @@
+DATA SEGMENT
+    INPUT DB 'This is a (sample) text with (some) brackets.$' ; Исходная строка
+    OUTPUT DB 100 DUP('$')                                    ; Буфер для результата
+DATA ENDS
+
+CODE SEGMENT
+START:
+    MOV AX, DATA
+    MOV DS, AX
+    MOV ES, AX
+
+    LEA SI, INPUT    ; Указатель на начало исходной строки
+    LEA DI, OUTPUT   ; Указатель на начало строки результата
+
+    MOV AL, 0        ; Флаг нахождения внутри скобок (0 - вне скобок, 1 - внутри)
+
+PROCESS_LOOP:
+    LODSB            ; Загрузить следующий символ из исходной строки в AL
+    CMP AL, '$'      ; Проверить на конец строки
+    JE END_PROCESS   ; Если это конец строки, завершить цикл
+
+    CMP AL, '('      ; Проверка на открывающую скобку
+    JE INSIDE_BRACKETS ; Если нашли '(', установить флаг
+
+    CMP AL, ')'      ; Проверка на закрывающую скобку
+    JE OUTSIDE_BRACKETS ; Если нашли ')', сбросить флаг
+
+    CMP AL, 0        ; Проверяем флаг (внутри скобок или нет)
+    JE COPY_CHAR     ; Если флаг = 0 (вне скобок), копировать символ
+
+    JMP PROCESS_LOOP ; Если внутри скобок, перейти к следующему символу
+
+COPY_CHAR:
+    STOSB            ; Копируем символ из AL в буфер результата
+    JMP PROCESS_LOOP ; Продолжить обработку
+
+INSIDE_BRACKETS:
+    MOV AL, 1        ; Установить флаг в 1 (внутри скобок)
+    JMP PROCESS_LOOP
+
+OUTSIDE_BRACKETS:
+    MOV AL, 0        ; Сбросить флаг в 0 (вне скобок)
+    JMP PROCESS_LOOP
+
+END_PROCESS:
+    MOV AL, '$'      ; Добавить символ конца строки в буфер результата
+    STOSB
+
+    ; Вывести результат
+    LEA DX, OUTPUT
+    MOV AH, 9
+    INT 21H
+
+    ; Завершение программы
+    MOV AX, 4C00H
+    INT 21H
+
+CODE ENDS
+END START
