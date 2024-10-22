@@ -1,0 +1,96 @@
+DATA SEGMENT
+    A DW 10, 5, 3, 7, 12, 8, 4, 11, 6, 9, 13, 14, 2, 1, 10, 5, 7, 8, 4, 3 ; массив из 20 элементов
+    N EQU 20                           ; количество элементов в массиве
+    SUM DW 0                           ; переменная для хранения суммы
+    MSG1 DB 'Sum of array elements is: $'
+    MSG2 DB 'Array elements: $'
+DATA ENDS
+
+CODE SEGMENT
+START:
+    MOV AX, DATA
+    MOV DS, AX
+
+    ; Инициализация суммы
+    XOR CX, CX                      ; CX = 0
+    XOR AX, AX                      ; AX = 0
+    MOV SI, 0                       ; указатель на массив
+
+    ; Суммирование элементов массива
+SUM_LOOP:
+    ADD AX, [SI + A]                ; AX = AX + A[SI]
+    ADD SI, 2                       ; перейти к следующему элементу массива (так как DW занимает 2 байта)
+    INC CX                          ; увеличить счетчик элементов
+    CMP CX, N                       ; проверить, достигли ли конца массива
+    JL SUM_LOOP                     ; если нет, повторить
+
+    ; Проверка суммы
+    MOV SUM, AX                     ; сохранить сумму
+    CMP AX, 50                      ; AX > 50?
+    JG PRINT_SUM                    ; если да, перейти к выводу суммы
+
+    ; Если сумма <= 50, то вывести исходный массив
+    LEA DX, MSG2
+    MOV AH, 9
+    INT 21H
+
+    MOV CX, N                       ; количество элементов для вывода
+    MOV SI, 0                       ; указатель на массив
+
+PRINT_ARRAY:
+    MOV AX, [SI + A]                ; получить элемент массива
+    CALL PRINT_NUMBER               ; печать числа
+    MOV AH, 2                       ; вызов функции вывода символа
+    MOV DL, ' '                     ; пробел
+    INT 21H
+    ADD SI, 2                       ; переход к следующему элементу
+    LOOP PRINT_ARRAY
+    JMP END_PROGRAM
+
+PRINT_SUM:
+    LEA DX, MSG1
+    MOV AH, 9
+    INT 21H
+
+    MOV AX, SUM
+    CALL PRINT_NUMBER               ; печать суммы
+
+END_PROGRAM:
+    MOV AX, 4C00H                   ; завершить выполнение
+    INT 21H
+
+; Подпрограмма для печати числа
+PRINT_NUMBER PROC
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+
+    XOR CX, CX                      ; счетчик цифр = 0
+    MOV BX, 10                      ; делитель = 10
+
+CONVERT_LOOP:
+    XOR DX, DX
+    DIV BX                          ; AX = AX / 10, остаток в DX
+    PUSH DX                         ; сохранить цифру
+    INC CX
+    OR AX, AX
+    JNZ CONVERT_LOOP
+
+    ; Вывод цифр
+PRINT_DIGITS:
+    POP DX
+    ADD DL, '0'
+    MOV AH, 2
+    INT 21H
+    LOOP PRINT_DIGITS
+
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+    RET
+PRINT_NUMBER ENDP
+
+CODE ENDS
+END START
